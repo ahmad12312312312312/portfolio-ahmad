@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import "./Login.css";
 
 import { FiEye, FiEyeOff } from "react-icons/fi";
@@ -6,12 +6,14 @@ import { FiEye, FiEyeOff } from "react-icons/fi";
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signOut,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
 import { useNavigate } from "react-router-dom";
 import { auth, db } from "../firebase";
 
 export default function Login() {
+  const ADMIN_EMAIL = "admin@gmail.com";
   const [mode, setMode] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
@@ -20,6 +22,11 @@ export default function Login() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleRegister = async (email, password) => {
+    if (email.toLowerCase() === ADMIN_EMAIL) {
+      alert("Admin account cannot be created from public registration");
+      return;
+    }
+
     try {
       const userCred = await createUserWithEmailAndPassword(
         auth,
@@ -33,8 +40,8 @@ export default function Login() {
       });
 
       setMode("login");
-    } catch (err) {
-      alert(err.message);
+    } catch {
+      alert("Registration failed");
     }
   };
   const handleLogin = async (email, password) => {
@@ -42,16 +49,34 @@ export default function Login() {
       await signInWithEmailAndPassword(auth, email, password);
 
       navigate("/mains");
-    } catch (err) {
+    } catch {
       alert("Invalid credentials");
     }
   };
-  useEffect(() => {
+
+  const handleAdminLogin = async (email, password) => {
+    try {
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
+
+      if (userCred.user.email?.toLowerCase() !== ADMIN_EMAIL) {
+        await signOut(auth);
+        alert("Only admin@gmail.com can access the admin dashboard");
+        return;
+      }
+
+      navigate("/admin");
+    } catch {
+      alert("Invalid admin credentials");
+    }
+  };
+
+  const switchMode = (nextMode) => {
+    setMode(nextMode);
     setEmail("");
     setPassword("");
     setConfirmPassword("");
     setShowPassword(false);
-  }, [mode]);
+  };
 
   return (
     <div className="auth-wrapper">
@@ -138,20 +163,29 @@ export default function Login() {
           )}
 
           {mode === "admin" && (
-            <div className="input-group">
+            <>
               <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Admin Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                type="email"
+                placeholder="Admin Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
-              <span
-                className="input-icon"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <FiEyeOff /> : <FiEye />}
-              </span>
-            </div>
+
+              <div className="input-group">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Admin Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
+                <span
+                  className="input-icon"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <FiEyeOff /> : <FiEye />}
+                </span>
+              </div>
+            </>
           )}
 
           <button
@@ -161,6 +195,11 @@ export default function Login() {
 
               if (!email && mode !== "admin") {
                 alert("Email is required");
+                return;
+              }
+
+              if (mode === "admin" && !email) {
+                alert("Admin email is required");
                 return;
               }
 
@@ -182,11 +221,7 @@ export default function Login() {
               }
 
               if (mode === "admin") {
-                if (password === "admin123") {
-                  navigate("/admin");
-                } else {
-                  alert("Invalid admin password");
-                }
+                handleAdminLogin(email, password);
               }
             }}
           >
@@ -198,13 +233,13 @@ export default function Login() {
 
         <div className="auth-switch">
           {mode !== "login" && (
-            <button onClick={() => setMode("login")}>User Login</button>
+            <button onClick={() => switchMode("login")}>User Login</button>
           )}
           {mode !== "register" && (
-            <button onClick={() => setMode("register")}>Register</button>
+            <button onClick={() => switchMode("register")}>Register</button>
           )}
           {mode !== "admin" && (
-            <button onClick={() => setMode("admin")}>Admin</button>
+            <button onClick={() => switchMode("admin")}>Admin</button>
           )}
         </div>
       </div>
