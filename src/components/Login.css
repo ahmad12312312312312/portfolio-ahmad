@@ -1,0 +1,174 @@
+:root {
+  --c-50:  #EFF6FF;
+  --c-100: #DBEAFE;
+  --c-800: #023E8A;
+  --c-900: #083472;
+  --c-950: #01060E;
+  --accent: #3B82F6;
+}
+
+/* ===== PAGE ===== */
+.auth-wrapper {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--c-50), var(--c-100));
+  font-family: "Inter", system-ui, sans-serif;
+}
+
+/* ===== CARD ===== */
+.auth-card {
+  width: 100%;
+  max-width: 420px;
+  background: #fff;
+  border-radius: 18px;
+  padding: 2.2rem;
+  box-shadow: 0 30px 80px rgba(2, 62, 138, 0.15);
+  animation: fadeUp 0.6s ease;
+}
+
+/* ===== HEADER ===== */
+.auth-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-header h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--c-900);
+}
+
+.auth-header p {
+  font-size: 0.9rem;
+  color: #64748b;
+  margin-top: 0.4rem;
+}
+
+/* ===== FORM ===== */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-form input {
+  padding: 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.auth-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+}
+
+/* ===== BUTTON ===== */
+.auth-btn {
+  margin-top: 0.5rem;
+  padding: 0.8rem;
+  border-radius: 12px;
+  border: none;
+  background: linear-gradient(135deg, var(--c-800), var(--c-900));
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(2, 62, 138, 0.3);
+}
+
+/* ===== SWITCH ===== */
+.auth-switch {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.2rem;
+}
+
+.auth-switch button {
+  background: none;
+  border: none;
+  color: var(--c-800);
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.auth-switch button:hover {
+  text-decoration: underline;
+}
+
+/* ===== ANIMATION ===== */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* INPUT GROUP */
+.input-group {
+  position: relative;
+  width: 100%;
+}
+
+.input-group input {
+  width: 100%;
+  padding: 0.75rem 2.6rem 0.75rem 0.9rem;
+  border-radius: 10px;
+  border: 1px solid #dbeafe;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+/* 👁 INSIDE INPUT */
+.input-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.input-icon:hover {
+  color: var(--c-800);
+}
+
+/* BUTTON */
+.auth-btn {
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+/* SWITCH LINKS */
+.auth-switch {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.2rem;
+}
+
+.auth-switch button {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--c-800);
+  cursor: pointer;
+}
