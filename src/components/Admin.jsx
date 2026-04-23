@@ -69,9 +69,29 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    onSnapshot(collection(db, "contacts"), (snap) =>
-      setContacts(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
-    );
+    let hasRtdbContacts = false;
+
+    const unsubContactsFs = onSnapshot(collection(db, "contacts"), (snap) => {
+      if (!hasRtdbContacts) {
+        setContacts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
+      }
+    });
+
+    const unsubContactsRtdb = readRtdb("contacts", (data) => {
+      if (!data) {
+        if (!hasRtdbContacts) {
+          setContacts([]);
+        }
+        return;
+      }
+
+      hasRtdbContacts = true;
+      const mappedContacts = Object.entries(data)
+        .map(([id, value]) => ({ id, ...value }))
+        .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      setContacts(mappedContacts);
+    });
 
     const unsubAbout = readRtdb("about/main", (data) => {
       if (data) {
@@ -116,6 +136,8 @@ export default function Admin() {
     });
 
     return () => {
+      unsubContactsFs();
+      unsubContactsRtdb();
       unsubAbout();
       unsubHobbies();
       unsubProjects();
@@ -307,7 +329,13 @@ export default function Admin() {
             {contacts.map((c) => (
               <div key={c.id} className="admin-card">
                 <b>{c.fullName}</b> ({c.email})<p>{c.message}</p>
-                <small>{c.createdAt?.toDate?.().toLocaleString()}</small>
+                <small>
+                  {c.createdAt?.toDate
+                    ? c.createdAt.toDate().toLocaleString()
+                    : c.createdAt
+                      ? new Date(c.createdAt).toLocaleString()
+                      : ""}
+                </small>
               </div>
             ))}
           </>

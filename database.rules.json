@@ -1,6 +1,13 @@
 {
   "rules": {
     ".read": "auth != null",
-    ".write": "auth != null"
+    ".write": "auth != null",
+    "contacts": {
+      ".read": "auth != null",
+      "$contactId": {
+        ".write": true,
+        ".validate": "newData.hasChildren(['fullName','email','message','createdAt']) && newData.child('fullName').isString() && newData.child('fullName').val().length <= 120 && (!newData.child('contact').exists() || newData.child('contact').isString()) && newData.child('email').isString() && newData.child('email').val().length <= 254 && newData.child('message').isString() && newData.child('message').val().length <= 2000 && newData.child('createdAt').isNumber()"
+      }
+    }
   }
 }

@@ -11,14 +11,16 @@ import {
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import profileImg from "../assets/Ahmad.png";
+import resumePdf from "../assets/resume.pdf";
 import { auth, db, rtdb } from "../firebase";
 import { readRtdb } from "../services/rtdbCrud";
 import "./Mains.css";
 
 export default function Mains() {
-  const EMAILJS_SERVICE_ID = "service_pusj32g";
+  const EMAILJS_SERVICE_ID = "service_t9rrjon";
   const EMAILJS_TEMPLATE_ID = "template_zgg0mlq";
-  const EMAILJS_PUBLIC_KEY = "OZV8aU2hlwliKruSK_lBf";
+  const EMAILJS_PUBLIC_KEY = "PfhRPH_IlvK14CBQj";
+  const RESUME_URL = resumePdf;
 
   const navigate = useNavigate();
 
@@ -52,6 +54,19 @@ export default function Mains() {
     type: "",
     message: "",
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResumeOpen, setIsResumeOpen] = useState(false);
+
+  const openResumeModal = () => setIsResumeOpen(true);
+  const closeResumeModal = () => setIsResumeOpen(false);
+
+  const withTimeout = (promise, ms, label) =>
+    Promise.race([
+      promise,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`${label} timed out`)), ms),
+      ),
+    ]);
 
   useEffect(() => {
     emailjs.init(EMAILJS_PUBLIC_KEY);
@@ -112,6 +127,11 @@ export default function Mains() {
 
   const submitContact = async (e) => {
     e.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
     setContactStatus({ type: "", message: "" });
 
     if (!contactForm.fullName || !contactForm.email || !contactForm.message) {
@@ -129,44 +149,101 @@ export default function Mains() {
         message: contactForm.message,
       };
 
+      const emailTemplatePayload = {
+        // Common sender aliases used in EmailJS templates
+        from_name: contactForm.fullName,
+        name: contactForm.fullName,
+        full_name: contactForm.fullName,
+        user_name: contactForm.fullName,
+
+        // Common email aliases
+        from_email: contactForm.email,
+        email: contactForm.email,
+        reply_to: contactForm.email,
+
+        // Contact/message data
+        contact: contactForm.contact,
+        phone: contactForm.contact,
+        message: contactForm.message,
+
+        // Explicit recipient/subject helpers for template setup
+        to_name: about.fullName || "Portfolio Admin",
+        to_email: about.email || "admin@gmail.com",
+        subject: "New Portfolio Contact Message",
+      };
+
+      setIsSubmitting(true);
       console.log("Submitting contact form:", contactPayload);
 
-      try {
-        await addDoc(collection(db, "contacts"), {
-          ...contactPayload,
-          createdAt: serverTimestamp(),
-        });
-        console.log("Contact saved to Firestore");
-      } catch (firestoreError) {
-        console.error("Firestore contact save failed:", firestoreError);
+      const results = await Promise.allSettled([
+        withTimeout(
+          addDoc(collection(db, "contacts"), {
+            ...contactPayload,
+            createdAt: serverTimestamp(),
+          }),
+          10000,
+          "Firestore save",
+        ),
+        (async () => {
+          const newContactRef = push(ref(rtdb, "contacts"));
+          await withTimeout(
+            set(newContactRef, {
+              ...contactPayload,
+              createdAt: Date.now(),
+            }),
+            10000,
+            "Realtime DB save",
+          );
+        })(),
+        withTimeout(
+          emailjs.send(
+            EMAILJS_SERVICE_ID,
+            EMAILJS_TEMPLATE_ID,
+            emailTemplatePayload,
+            {
+              publicKey: EMAILJS_PUBLIC_KEY,
+            },
+          ),
+          10000,
+          "EmailJS send",
+        ),
+      ]);
+
+      const [firestoreResult, rtdbResult, emailResult] = results;
+      const dataSaved =
+        firestoreResult.status === "fulfilled" ||
+        rtdbResult.status === "fulfilled";
+
+      if (!dataSaved) {
+        const reasons = results
+          .filter((r) => r.status === "rejected")
+          .map((r) => r.reason?.message || "Unknown error")
+          .join(" | ");
+        throw new Error(reasons || "All contact submit channels failed");
       }
 
-      try {
-        const newContactRef = push(ref(rtdb, "contacts"));
-        await set(newContactRef, {
-          ...contactPayload,
-          createdAt: Date.now(),
+      if (emailResult.status === "rejected") {
+        console.error("EmailJS message failed:", emailResult.reason);
+
+        const emailReason =
+          emailResult.reason?.text ||
+          emailResult.reason?.message ||
+          "Unknown EmailJS error";
+
+        setContactStatus({
+          type: "success",
+          message: `Message saved successfully, but email delivery failed (${emailReason}). Admin can still view it in the dashboard.`,
         });
-        console.log("Contact saved to RTDB");
-      } catch (rtdbError) {
-        console.error("RTDB contact save failed:", rtdbError);
+      } else {
+        console.log("EmailJS message sent successfully");
+        setContactStatus({
+          type: "success",
+          message:
+            "Message sent successfully! Admin can now view it in the dashboard.",
+        });
       }
-
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        from_name: contactForm.fullName,
-        from_email: contactForm.email,
-        contact: contactForm.contact,
-        message: contactForm.message,
-      });
-
-      console.log("EmailJS message sent successfully");
 
       console.log("Contact form submitted successfully:", contactPayload);
-      setContactStatus({
-        type: "success",
-        message:
-          "Message sent successfully! Admin can now view it in the dashboard.",
-      });
 
       setContactForm({
         fullName: "",
@@ -176,10 +253,21 @@ export default function Mains() {
       });
     } catch (error) {
       console.error("Contact Error:", error);
+
+      const readableMessage =
+        error?.code === "PERMISSION_DENIED" ||
+        String(error?.message || "")
+          .toLowerCase()
+          .includes("permission")
+          ? "Permission denied while saving message. Please log in first or update Firebase rules for contacts."
+          : error?.message || "Failed to send message. Please try again.";
+
       setContactStatus({
         type: "error",
-        message: "Failed to send message. Please try again.",
+        message: readableMessage,
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -236,9 +324,63 @@ export default function Mains() {
                 <strong>Address:</strong> {about.address}
               </li>
             </ul>
+
+            <button
+              type="button"
+              className="resume-btn"
+              onClick={openResumeModal}
+            >
+              View Resume
+            </button>
           </div>
         </div>
       </section>
+
+      {isResumeOpen && (
+        <div className="resume-modal-backdrop" onClick={closeResumeModal}>
+          <div
+            className="resume-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Resume preview"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="resume-modal-header">
+              <h3>Resume Preview</h3>
+              <button
+                type="button"
+                className="resume-modal-close"
+                onClick={closeResumeModal}
+                aria-label="Close resume preview"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="resume-modal-body">
+              <iframe
+                src={`${RESUME_URL}#zoom=page-width&view=FitH`}
+                title="Resume PDF"
+                className="resume-frame"
+              />
+            </div>
+
+            <div className="resume-modal-actions">
+              <a className="resume-download-btn" href={RESUME_URL} download>
+                Download PDF
+              </a>
+              <a
+                className="resume-download-btn resume-open-btn"
+                href={RESUME_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open PDF
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== PROJECTS ===== */}
       <section className="section projects" id="projects">
@@ -313,8 +455,8 @@ export default function Mains() {
             required
           />
 
-          <button type="submit" className="contact-btn">
-            Submit Message
+          <button type="submit" className="contact-btn" disabled={isSubmitting}>
+            {isSubmitting ? "Sending..." : "Submit Message"}
           </button>
         </form>
       </section>
