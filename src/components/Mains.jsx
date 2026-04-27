@@ -60,6 +60,21 @@ export default function Mains() {
   const openResumeModal = () => setIsResumeOpen(true);
   const closeResumeModal = () => setIsResumeOpen(false);
 
+  useEffect(() => {
+    if (!isResumeOpen) {
+      return;
+    }
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape") {
+        closeResumeModal();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    return () => document.removeEventListener("keydown", handleEscape);
+  }, [isResumeOpen]);
+
   const withTimeout = (promise, ms, label) =>
     Promise.race([
       promise,
@@ -352,8 +367,9 @@ export default function Mains() {
                 className="resume-modal-close"
                 onClick={closeResumeModal}
                 aria-label="Close resume preview"
+                title="Close"
               >
-                Close
+                X
               </button>
             </div>
 

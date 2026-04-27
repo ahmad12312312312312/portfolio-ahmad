@@ -305,15 +305,34 @@ a {
 }
 
 .resume-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 2.5rem;
   height: 2.5rem;
+  padding: 0;
   border: none;
   border-radius: 999px;
   background: rgba(59, 130, 246, 0.1);
   color: var(--c-900);
-  font-size: 1.6rem;
+  font-size: 1rem;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.resume-modal-close:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+.resume-modal-close:focus-visible {
+  outline: 2px solid var(--c-500);
+  outline-offset: 2px;
 }
 
 .resume-modal-body {
@@ -2116,4 +2135,26 @@ a {
 
 .resume-open-btn {
   margin-left: 0.75rem;
+}
+
+/* ===== MAIN PAGE DARK-BLUE THEME OVERRIDE ===== */
+:root {
+  --main-bg-start: #7e9dce;
+  --main-bg-end: #3f68ae;
+}
+
+body,
+.hero,
+.about,
+.hobbies,
+.projects,
+.contact,
+.nba {
+  background: linear-gradient(135deg, var(--main-bg-start), var(--main-bg-end));
+}
+
+.hero h1 span {
+  background: none;
+  -webkit-text-fill-color: #0f2f66;
+  color: #0f2f66;
 }
