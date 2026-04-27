@@ -1,0 +1,199 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;1,14..32,400;1,14..32,600&display=swap");
+
+:root {
+  --black: #0a0a0a;
+  --white: #ffffff;
+  --white-rgb: 255, 255, 255;
+  --black-rgb: 10, 10, 10;
+  --gray-50: #f9f9f9;
+  --gray-100: #f2f2f2;
+  --gray-200: #e5e5e5;
+  --gray-300: #d4d4d4;
+  --gray-400: #a3a3a3;
+  --gray-500: #737373;
+  --gray-600: #525252;
+  --gray-700: #404040;
+  --gray-800: #262626;
+  --gray-900: #171717;
+
+  --bg: var(--white);
+  --bg-dark: var(--gray-900);
+  --surface: var(--gray-50);
+  --border: var(--gray-200);
+  --border-dark: rgba(255, 255, 255, 0.08);
+  --text: var(--gray-900);
+  --text-muted: var(--gray-500);
+  --text-dark: var(--white);
+  --text-dark-m: var(--gray-400);
+
+  --glass-bg: rgba(var(--black-rgb), 0.55);
+  --glass-bg-2: rgba(var(--black-rgb), 0.68);
+  --glass-border: rgba(var(--white-rgb), 0.14);
+  --glass-border-2: rgba(var(--white-rgb), 0.22);
+
+  --font: "Inter", system-ui, -apple-system, sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  font-size: 16px;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg-dark);
+  color: rgba(var(--white-rgb), 0.9);
+  line-height: 1.6;
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
+
+button {
+  font-family: var(--font);
+  cursor: pointer;
+}
+
+img {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  background: rgba(var(--white-rgb), 0.9);
+  color: rgba(var(--black-rgb), 0.95);
+}
+
+/* ── PAGE BACKGROUND (SoftAurora) ── */
+.page-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: var(--bg-dark);
+  pointer-events: none;
+}
+
+.page-aurora > .soft-aurora-container {
+  width: 100%;
+  height: 100%;
+}
+
+.page-aurora-grain {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.12;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+}
+
+.page-aurora-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(
+    60% 60% at 50% 40%,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(0, 0, 0, 0.55) 100%
+  );
+}
+
+/* Shared glass buttons (used across pages) */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.72rem 1.4rem;
+  border-radius: 999px;
+  background: rgba(var(--white-rgb), 0.92);
+  color: var(--black);
+  border: 1px solid rgba(var(--white-rgb), 0.18);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    background 0.22s,
+    border-color 0.22s,
+    transform 0.18s,
+    box-shadow 0.22s;
+  white-space: nowrap;
+}
+
+.btn-primary:hover {
+  background: rgba(var(--white-rgb), 1);
+  border-color: rgba(var(--white-rgb), 0.3);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary.btn-xs {
+  font-size: 0.72rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+}
+
+.btn-primary.btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+.btn-outline {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.72rem 1.4rem;
+  border-radius: 999px;
+  background: rgba(var(--black-rgb), 0.22);
+  color: rgba(var(--white-rgb), 0.92);
+  border: 1px solid rgba(var(--white-rgb), 0.22);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition:
+    border-color 0.22s,
+    background 0.22s,
+    transform 0.18s;
+  white-space: nowrap;
+}
+
+.btn-outline:hover {
+  border-color: rgba(var(--white-rgb), 0.38);
+  background: rgba(var(--black-rgb), 0.3);
+  transform: translateY(-1px);
+}
+
+.btn-outline.btn-xs {
+  font-size: 0.72rem;
+  padding: 0.45rem 0.95rem;
+  border-radius: 8px;
+}

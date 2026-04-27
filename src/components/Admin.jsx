@@ -1,6 +1,7 @@
 import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { FaSignOutAlt } from "react-icons/fa";
+import SoftAurora from "./SoftAurora";
 
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
@@ -12,11 +13,13 @@ import {
   writeRtdb,
 } from "../services/rtdbCrud";
 import "./Admin.css";
+import { useToast } from "./Toast";
 
 export default function Admin() {
   const [active, setActive] = useState("about");
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState("info");
+  const { pushToast } = useToast();
 
   const [about, setAbout] = useState({
     fullName: "",
@@ -44,9 +47,14 @@ export default function Admin() {
   const handleLogout = async () => {
     try {
       await signOut(auth);
+      pushToast("You have been logged out.", { type: "info", title: "Logout" });
       navigate("/login");
     } catch (err) {
       console.error(err);
+      pushToast("Logout failed. Please try again.", {
+        type: "error",
+        title: "Logout",
+      });
     }
   };
 
@@ -56,6 +64,14 @@ export default function Admin() {
   const showStatus = (message, type = "info") => {
     setStatusMessage(message);
     setStatusType(type);
+
+    const toastType =
+      type === "success" ? "success" : type === "error" ? "error" : "info";
+    pushToast(message, {
+      type: toastType,
+      title:
+        type === "success" ? "Success" : type === "error" ? "Error" : "Info",
+    });
   };
 
   const handleAdminError = (action, error) => {
@@ -145,202 +161,242 @@ export default function Admin() {
   }, []);
 
   return (
-    <div className="admin-wrap">
-      <aside className="admin-sidebar">
-        <h2>Admin</h2>
+    <>
+      <div className="page-aurora" aria-hidden="true">
+        <SoftAurora
+          speed={0.22}
+          scale={2.2}
+          brightness={0.45}
+          color1="#ffffff"
+          color2="#bdbdbd"
+          noiseFrequency={1.6}
+          noiseAmplitude={0.55}
+          bandHeight={0.42}
+          bandSpread={1}
+          octaveDecay={0.12}
+          layerOffset={0.12}
+          colorSpeed={0.35}
+          enableMouseInteraction
+          useWindowMouse
+          mouseInfluence={0.1}
+        />
+        <div className="page-aurora-grain" />
+        <div className="page-aurora-vignette" />
+      </div>
 
-        {["about", "hobbies", "projects", "contacts"].map((tab) => (
-          <button
-            key={tab}
-            className={active === tab ? "active" : ""}
-            onClick={() => setActive(tab)}
-          >
-            {tab.toUpperCase()}
+      <div className="admin-wrap">
+        <aside className="admin-sidebar">
+          <h2>Admin</h2>
+
+          {["about", "hobbies", "projects", "contacts"].map((tab) => (
+            <button
+              key={tab}
+              className={active === tab ? "active" : ""}
+              onClick={() => setActive(tab)}
+            >
+              {tab.toUpperCase()}
+            </button>
+          ))}
+
+          <button type="button" className="logout-btn" onClick={handleLogout}>
+            <FaSignOutAlt />
+            <span>Logout</span>
           </button>
-        ))}
+        </aside>
 
-        <button className="logout-btn" onClick={handleLogout}>
-          <FaSignOutAlt />
-          <span>Logout</span>
-        </button>
-      </aside>
-
-      <main className="admin-content">
-        {statusMessage && (
-          <div className={`admin-status ${statusType}`}>
-            <span>{statusMessage}</span>
+        <main className="admin-content">
+          <div className="admin-topbar">
+            <h3>Admin Dashboard</h3>
             <button
               type="button"
-              onClick={() => setStatusMessage("")}
-              aria-label="Dismiss status"
+              className="logout-fixed-btn"
+              onClick={handleLogout}
             >
-              ×
+              <FaSignOutAlt />
+              <span>Logout</span>
             </button>
           </div>
-        )}
 
-        {active === "about" && (
-          <>
-            <h3>Edit About</h3>
+          {statusMessage && (
+            <div className={`admin-status ${statusType}`}>
+              <span>{statusMessage}</span>
+              <button
+                type="button"
+                onClick={() => setStatusMessage("")}
+                aria-label="Dismiss status"
+              >
+                ×
+              </button>
+            </div>
+          )}
 
-            {Object.entries(aboutFields).map(([key, label]) => (
+          {active === "about" && (
+            <>
+              <h3>Edit About</h3>
+
+              {Object.entries(aboutFields).map(([key, label]) => (
+                <input
+                  key={key}
+                  value={about[key]}
+                  placeholder={label}
+                  onChange={(e) =>
+                    setAbout({ ...about, [key]: e.target.value })
+                  }
+                />
+              ))}
+              <button
+                onClick={async () => {
+                  try {
+                    showStatus("Saving about changes...", "info");
+                    await writeRtdb("about/main", about);
+                    showStatus("About updated successfully.", "success");
+                  } catch (error) {
+                    handleAdminError("save about", error);
+                  }
+                }}
+              >
+                Save
+              </button>
+            </>
+          )}
+
+          {active === "hobbies" && (
+            <>
+              <h3>Hobbies</h3>
               <input
-                key={key}
-                value={about[key]}
-                placeholder={label}
-                onChange={(e) => setAbout({ ...about, [key]: e.target.value })}
+                placeholder="Title"
+                value={hobby.title}
+                onChange={(e) => setHobby({ ...hobby, title: e.target.value })}
               />
-            ))}
-            <button
-              onClick={async () => {
-                try {
-                  showStatus("Saving about changes...", "info");
-                  await writeRtdb("about/main", about);
-                  showStatus("About updated successfully.", "success");
-                } catch (error) {
-                  handleAdminError("save about", error);
+              <input
+                placeholder="Description"
+                value={hobby.desc}
+                onChange={(e) => setHobby({ ...hobby, desc: e.target.value })}
+              />
+              <button
+                onClick={async () => {
+                  try {
+                    showStatus("Adding hobby...", "info");
+                    await pushRtdb("hobbies", {
+                      ...hobby,
+                      createdAt: Date.now(),
+                    });
+                    setHobby({ title: "", desc: "" });
+                    showStatus("Hobby added successfully.", "success");
+                  } catch (error) {
+                    handleAdminError("add hobby", error);
+                  }
+                }}
+              >
+                Add
+              </button>
+
+              {hobbies.map((h) => (
+                <div key={h.id} className="admin-card">
+                  <b>{h.title}</b>
+                  <p>{h.desc}</p>
+                  <button
+                    onClick={async () => {
+                      try {
+                        showStatus("Deleting hobby...", "info");
+                        await deleteRtdb(`hobbies/${h.id}`);
+                        showStatus("Hobby deleted successfully.", "success");
+                      } catch (error) {
+                        handleAdminError("delete hobby", error);
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
+
+          {active === "projects" && (
+            <>
+              <h3>Projects</h3>
+              <input
+                placeholder="Title"
+                value={project.title}
+                onChange={(e) =>
+                  setProject({ ...project, title: e.target.value })
                 }
-              }}
-            >
-              Save
-            </button>
-          </>
-        )}
-
-        {active === "hobbies" && (
-          <>
-            <h3>Hobbies</h3>
-            <input
-              placeholder="Title"
-              value={hobby.title}
-              onChange={(e) => setHobby({ ...hobby, title: e.target.value })}
-            />
-            <input
-              placeholder="Description"
-              value={hobby.desc}
-              onChange={(e) => setHobby({ ...hobby, desc: e.target.value })}
-            />
-            <button
-              onClick={async () => {
-                try {
-                  showStatus("Adding hobby...", "info");
-                  await pushRtdb("hobbies", {
-                    ...hobby,
-                    createdAt: Date.now(),
-                  });
-                  setHobby({ title: "", desc: "" });
-                  showStatus("Hobby added successfully.", "success");
-                } catch (error) {
-                  handleAdminError("add hobby", error);
+              />
+              <input
+                placeholder="Description"
+                value={project.desc}
+                onChange={(e) =>
+                  setProject({ ...project, desc: e.target.value })
                 }
-              }}
-            >
-              Add
-            </button>
-
-            {hobbies.map((h) => (
-              <div key={h.id} className="admin-card">
-                <b>{h.title}</b>
-                <p>{h.desc}</p>
-                <button
-                  onClick={async () => {
-                    try {
-                      showStatus("Deleting hobby...", "info");
-                      await deleteRtdb(`hobbies/${h.id}`);
-                      showStatus("Hobby deleted successfully.", "success");
-                    } catch (error) {
-                      handleAdminError("delete hobby", error);
-                    }
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            ))}
-          </>
-        )}
-
-        {active === "projects" && (
-          <>
-            <h3>Projects</h3>
-            <input
-              placeholder="Title"
-              value={project.title}
-              onChange={(e) =>
-                setProject({ ...project, title: e.target.value })
-              }
-            />
-            <input
-              placeholder="Description"
-              value={project.desc}
-              onChange={(e) => setProject({ ...project, desc: e.target.value })}
-            />
-            <input
-              placeholder="Tech Stack"
-              value={project.stack}
-              onChange={(e) =>
-                setProject({ ...project, stack: e.target.value })
-              }
-            />
-            <button
-              onClick={async () => {
-                try {
-                  showStatus("Adding project...", "info");
-                  await pushRtdb("projects", {
-                    ...project,
-                    createdAt: Date.now(),
-                  });
-                  setProject({ title: "", desc: "", stack: "" });
-                  showStatus("Project added successfully.", "success");
-                } catch (error) {
-                  handleAdminError("add project", error);
+              />
+              <input
+                placeholder="Tech Stack"
+                value={project.stack}
+                onChange={(e) =>
+                  setProject({ ...project, stack: e.target.value })
                 }
-              }}
-            >
-              Add
-            </button>
+              />
+              <button
+                onClick={async () => {
+                  try {
+                    showStatus("Adding project...", "info");
+                    await pushRtdb("projects", {
+                      ...project,
+                      createdAt: Date.now(),
+                    });
+                    setProject({ title: "", desc: "", stack: "" });
+                    showStatus("Project added successfully.", "success");
+                  } catch (error) {
+                    handleAdminError("add project", error);
+                  }
+                }}
+              >
+                Add
+              </button>
 
-            {projects.map((p) => (
-              <div key={p.id} className="admin-card">
-                <b>{p.title}</b>
-                <p>{p.desc}</p>
-                <small>{p.stack}</small>
-                <button
-                  onClick={async () => {
-                    try {
-                      showStatus("Deleting project...", "info");
-                      await deleteRtdb(`projects/${p.id}`);
-                      showStatus("Project deleted successfully.", "success");
-                    } catch (error) {
-                      handleAdminError("delete project", error);
-                    }
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            ))}
-          </>
-        )}
+              {projects.map((p) => (
+                <div key={p.id} className="admin-card">
+                  <b>{p.title}</b>
+                  <p>{p.desc}</p>
+                  <small>{p.stack}</small>
+                  <button
+                    onClick={async () => {
+                      try {
+                        showStatus("Deleting project...", "info");
+                        await deleteRtdb(`projects/${p.id}`);
+                        showStatus("Project deleted successfully.", "success");
+                      } catch (error) {
+                        handleAdminError("delete project", error);
+                      }
+                    }}
+                  >
+                    Delete
+                  </button>
+                </div>
+              ))}
+            </>
+          )}
 
-        {active === "contacts" && (
-          <>
-            <h3>Messages</h3>
-            {contacts.map((c) => (
-              <div key={c.id} className="admin-card">
-                <b>{c.fullName}</b> ({c.email})<p>{c.message}</p>
-                <small>
-                  {c.createdAt?.toDate
-                    ? c.createdAt.toDate().toLocaleString()
-                    : c.createdAt
-                      ? new Date(c.createdAt).toLocaleString()
-                      : ""}
-                </small>
-              </div>
-            ))}
-          </>
-        )}
-      </main>
-    </div>
+          {active === "contacts" && (
+            <>
+              <h3>Messages</h3>
+              {contacts.map((c) => (
+                <div key={c.id} className="admin-card">
+                  <b>{c.fullName}</b> ({c.email})<p>{c.message}</p>
+                  <small>
+                    {c.createdAt?.toDate
+                      ? c.createdAt.toDate().toLocaleString()
+                      : c.createdAt
+                        ? new Date(c.createdAt).toLocaleString()
+                        : ""}
+                  </small>
+                </div>
+              ))}
+            </>
+          )}
+        </main>
+      </div>
+    </>
   );
 }
