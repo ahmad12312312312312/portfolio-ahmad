@@ -945,7 +945,7 @@ export default function Mains() {
                         <input
                           id="cf-name"
                           type="text"
-                          placeholder="John Doe"
+                          placeholder="ahmad pamaylaon"
                           value={contactForm.fullName}
                           onChange={(e) =>
                             setContactForm({
@@ -961,7 +961,7 @@ export default function Mains() {
                         <input
                           id="cf-phone"
                           type="text"
-                          placeholder="+63 900 000 0000"
+                          placeholder="0900 000 0000"
                           value={contactForm.contact}
                           onChange={(e) =>
                             setContactForm({
@@ -980,7 +980,7 @@ export default function Mains() {
                       <input
                         id="cf-email"
                         type="email"
-                        placeholder="john@example.com"
+                        placeholder="ahmad@example.com"
                         value={contactForm.email}
                         onChange={(e) =>
                           setContactForm({
@@ -998,7 +998,7 @@ export default function Mains() {
                       </label>
                       <textarea
                         id="cf-msg"
-                        placeholder="Tell me about your project…"
+                        placeholder="Tell me what you need…"
                         rows="5"
                         value={contactForm.message}
                         onChange={(e) =>
