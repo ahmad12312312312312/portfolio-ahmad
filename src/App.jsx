@@ -7,14 +7,15 @@ import Login from "./components/Login";
 import Mains from "./components/Mains";
 import { auth } from "./firebase";
 
-function AdminRouteGuard({ children }) {
+const ADMIN_EMAIL = "admin@gmail.com";
+
+function AuthGate({ children, allowAdminOnly = false, publicOnly = false }) {
   const [isLoading, setIsLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [user, setUser] = useState(null);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (user) => {
-      const adminEmail = "admin@gmail.com";
-      setIsAdmin(user?.email?.toLowerCase() === adminEmail);
+      setUser(user);
       setIsLoading(false);
     });
 
@@ -22,7 +23,18 @@ function AdminRouteGuard({ children }) {
   }, []);
 
   if (isLoading) return null;
-  if (!isAdmin) return <Navigate to="/login" replace />;
+
+  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL;
+
+  if (publicOnly) {
+    if (user) {
+      return <Navigate to={isAdmin ? "/admin" : "/mains"} replace />;
+    }
+    return children;
+  }
+
+  if (!user) return <Navigate to="/login" replace />;
+  if (allowAdminOnly && !isAdmin) return <Navigate to="/login" replace />;
 
   return children;
 }
@@ -34,16 +46,30 @@ function App() {
       <Route path="/" element={<Navigate to="/login" />} />
 
       {/* Pages */}
-      <Route path="/login" element={<Login />} />
+      <Route
+        path="/login"
+        element={
+          <AuthGate publicOnly>
+            <Login />
+          </AuthGate>
+        }
+      />
       <Route
         path="/admin"
         element={
-          <AdminRouteGuard>
+          <AuthGate allowAdminOnly>
             <Admin />
-          </AdminRouteGuard>
+          </AuthGate>
         }
       />
-      <Route path="/mains" element={<Mains />} />
+      <Route
+        path="/mains"
+        element={
+          <AuthGate>
+            <Mains />
+          </AuthGate>
+        }
+      />
 
       {/* Fallback */}
       <Route path="*" element={<h1>404 Page Not Found</h1>} />

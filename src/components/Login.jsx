@@ -59,9 +59,11 @@ export default function Login() {
   };
   const handleLogin = async (email, password) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      const userCred = await signInWithEmailAndPassword(auth, email, password);
       pushToast("Welcome back!", { type: "success", title: "Logged in" });
-      navigate("/mains");
+      navigate(
+        userCred.user.email?.toLowerCase() === ADMIN_EMAIL ? "/admin" : "/mains",
+      );
     } catch {
       pushToast("Invalid email or password.", {
         type: "error",

@@ -1,13 +1,6 @@
 import emailjs from "@emailjs/browser";
 import { signOut } from "firebase/auth";
 import { push, ref, set } from "firebase/database";
-import {
-  addDoc,
-  collection,
-  doc,
-  onSnapshot,
-  serverTimestamp,
-} from "firebase/firestore";
 import { AnimatePresence, motion, useScroll, useSpring } from "framer-motion";
 import gsap from "gsap";
 import { ScrollSmoother } from "gsap/ScrollSmoother";
@@ -38,7 +31,7 @@ import { useNavigate } from "react-router-dom";
 import profileImg from "../assets/Ahmad.png";
 import logo from "../assets/LOGO.png";
 import resumePdf from "../assets/resume.pdf";
-import { auth, db, rtdb } from "../firebase";
+import { auth, rtdb } from "../firebase";
 import { readRtdb } from "../services/rtdbCrud";
 import "./Mains.css";
 import SoftAurora from "./SoftAurora";
@@ -357,11 +350,8 @@ export default function Mains() {
   /* firebase */
   useEffect(() => {
     emailjs.init(EMAILJS_PUBLIC_KEY);
-    let hadAbout = false,
-      hadProjects = false;
     const unA = readRtdb("about/main", (d) => {
       if (d) {
-        hadAbout = true;
         setAbout({
           fullName: "",
           age: "",
@@ -374,22 +364,20 @@ export default function Mains() {
       }
     });
     const unP = readRtdb("projects", (d) => {
-      if (!d) return;
-      hadProjects = true;
-      setProjects(Object.entries(d).map(([id, v]) => ({ id, ...v })));
-    });
-    const unAf = onSnapshot(doc(db, "about", "main"), (s) => {
-      if (!hadAbout && s.exists()) setAbout(s.data());
-    });
-    const unPf = onSnapshot(collection(db, "projects"), (s) => {
-      if (!hadProjects)
-        setProjects(s.docs.map((d) => ({ id: d.id, ...d.data() })));
+      if (!d) {
+        setProjects([]);
+        return;
+      }
+
+      setProjects(
+        Object.entries(d)
+          .map(([id, v]) => ({ id, ...v }))
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
+      );
     });
     return () => {
       unA();
       unP();
-      unAf();
-      unPf();
     };
   }, []);
 
@@ -430,14 +418,6 @@ export default function Mains() {
         message: contactForm.message,
       };
       const results = await Promise.allSettled([
-        withTimeout(
-          addDoc(collection(db, "contacts"), {
-            ...p,
-            createdAt: serverTimestamp(),
-          }),
-          10000,
-          "Firestore",
-        ),
         (async () => {
           const r = push(ref(rtdb, "contacts"));
           await withTimeout(
@@ -465,9 +445,8 @@ export default function Mains() {
           "EmailJS",
         ),
       ]);
-      const [fs, rt, em] = results;
-      if (fs.status === "rejected" && rt.status === "rejected")
-        throw new Error("Save failed");
+      const [rt, em] = results;
+      if (rt.status === "rejected") throw new Error("Save failed");
       setContactStatus({
         type: "success",
         message:
@@ -714,7 +693,8 @@ export default function Mains() {
                     About Me
                   </p>
                   <h2 className="section-heading">
-                    Crafting digital experience that <em>matter.</em>
+                    Creating products <br />
+                    that make <em>sense.</em>
                   </h2>
                   <hr className="divider" />
                   <p className="about-body" data-gsap="fade-up">

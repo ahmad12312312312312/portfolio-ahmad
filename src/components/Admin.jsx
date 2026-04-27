@@ -1,13 +1,13 @@
-import { collection, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import { FaSignOutAlt } from "react-icons/fa";
 import SoftAurora from "./SoftAurora";
 
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
-import { auth, db } from "../firebase";
+import { auth } from "../firebase";
 import {
   deleteRtdb,
+  patchRtdb,
   pushRtdb,
   readRtdb,
   writeRtdb,
@@ -60,6 +60,7 @@ export default function Admin() {
 
   const [hobby, setHobby] = useState({ title: "", desc: "" });
   const [project, setProject] = useState({ title: "", desc: "", stack: "" });
+  const [editingProjectId, setEditingProjectId] = useState(null);
 
   const showStatus = (message, type = "info") => {
     setStatusMessage(message);
@@ -85,23 +86,12 @@ export default function Admin() {
   };
 
   useEffect(() => {
-    let hasRtdbContacts = false;
-
-    const unsubContactsFs = onSnapshot(collection(db, "contacts"), (snap) => {
-      if (!hasRtdbContacts) {
-        setContacts(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-      }
-    });
-
     const unsubContactsRtdb = readRtdb("contacts", (data) => {
       if (!data) {
-        if (!hasRtdbContacts) {
-          setContacts([]);
-        }
+        setContacts([]);
         return;
       }
 
-      hasRtdbContacts = true;
       const mappedContacts = Object.entries(data)
         .map(([id, value]) => ({ id, ...value }))
         .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -144,21 +134,56 @@ export default function Admin() {
       }
 
       setProjects(
-        Object.entries(data).map(([id, value]) => ({
-          id,
-          ...value,
-        })),
+        Object.entries(data)
+          .map(([id, value]) => ({
+            id,
+            ...value,
+          }))
+          .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)),
       );
     });
 
     return () => {
-      unsubContactsFs();
       unsubContactsRtdb();
       unsubAbout();
       unsubHobbies();
       unsubProjects();
     };
   }, []);
+
+  const resetProjectForm = () => {
+    setProject({ title: "", desc: "", stack: "" });
+    setEditingProjectId(null);
+  };
+
+  const handleProjectSubmit = async () => {
+    if (!project.title.trim() || !project.desc.trim() || !project.stack.trim()) {
+      showStatus("Please fill in all project fields.", "error");
+      return;
+    }
+
+    try {
+      if (editingProjectId) {
+        showStatus("Updating project...", "info");
+        await patchRtdb(`projects/${editingProjectId}`, {
+          ...project,
+          updatedAt: Date.now(),
+        });
+        showStatus("Project updated successfully.", "success");
+      } else {
+        showStatus("Adding project...", "info");
+        await pushRtdb("projects", {
+          ...project,
+          createdAt: Date.now(),
+        });
+        showStatus("Project added successfully.", "success");
+      }
+
+      resetProjectForm();
+    } catch (error) {
+      handleAdminError(editingProjectId ? "update project" : "add project", error);
+    }
+  };
 
   return (
     <>
@@ -338,22 +363,15 @@ export default function Admin() {
                 }
               />
               <button
-                onClick={async () => {
-                  try {
-                    showStatus("Adding project...", "info");
-                    await pushRtdb("projects", {
-                      ...project,
-                      createdAt: Date.now(),
-                    });
-                    setProject({ title: "", desc: "", stack: "" });
-                    showStatus("Project added successfully.", "success");
-                  } catch (error) {
-                    handleAdminError("add project", error);
-                  }
-                }}
+                onClick={handleProjectSubmit}
               >
-                Add
+                {editingProjectId ? "Update" : "Add"}
               </button>
+              {editingProjectId && (
+                <button type="button" onClick={resetProjectForm}>
+                  Cancel Edit
+                </button>
+              )}
 
               {projects.map((p) => (
                 <div key={p.id} className="admin-card">
@@ -361,10 +379,27 @@ export default function Admin() {
                   <p>{p.desc}</p>
                   <small>{p.stack}</small>
                   <button
+                    type="button"
+                    onClick={() => {
+                      setProject({
+                        title: p.title || "",
+                        desc: p.desc || "",
+                        stack: p.stack || "",
+                      });
+                      setEditingProjectId(p.id);
+                      showStatus(`Editing "${p.title}"`, "info");
+                    }}
+                  >
+                    Edit
+                  </button>
+                  <button
                     onClick={async () => {
                       try {
                         showStatus("Deleting project...", "info");
                         await deleteRtdb(`projects/${p.id}`);
+                        if (editingProjectId === p.id) {
+                          resetProjectForm();
+                        }
                         showStatus("Project deleted successfully.", "success");
                       } catch (error) {
                         handleAdminError("delete project", error);
