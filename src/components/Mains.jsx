@@ -9,6 +9,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   RiArrowRightLine,
   RiBrush3Line,
+  RiCalendarLine,
   RiCheckLine,
   RiCloseLine,
   RiCodeSSlashLine,
@@ -193,6 +194,7 @@ export default function Mains() {
   const wrapperRef = useRef(null);
   const contentRef = useRef(null);
   const smootherRef = useRef(null);
+  const navLockRef = useRef(0);
 
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, { stiffness: 400, damping: 40 });
@@ -313,6 +315,7 @@ export default function Mains() {
   /* nav sticky + active section */
   useEffect(() => {
     const fn = () => {
+      if (Date.now() < navLockRef.current) return;
       setNavSolid(window.scrollY > 56);
       const ids = [
         "home",
@@ -475,6 +478,21 @@ export default function Mains() {
   ];
   const displayProjects = projects.length > 0 ? projects : FALLBACK_PROJECTS;
 
+  const handleNavClick = (event, href) => {
+    event.preventDefault();
+    const targetId = href.slice(1);
+    navLockRef.current = Date.now() + 700;
+    setActiveSection(targetId);
+
+    if (smootherRef.current) {
+      smootherRef.current.scrollTo(href, true, "top top");
+      return;
+    }
+
+    const el = document.getElementById(targetId);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
     <>
       {/* PAGE BACKGROUND */}
@@ -527,6 +545,7 @@ export default function Mains() {
                 key={label}
                 href={href}
                 className={`nav-item${activeSection === href.slice(1) ? " active" : ""}`}
+                onClick={(event) => handleNavClick(event, href)}
               >
                 {label}
               </a>
@@ -534,9 +553,6 @@ export default function Mains() {
           </nav>
 
           <div className="nav-end">
-            <button className="btn-primary btn-xs" onClick={handleLogout}>
-              Logout
-            </button>
             <button
               className="hamburger"
               onClick={() => setMenuOpen(!menuOpen)}
@@ -565,21 +581,15 @@ export default function Mains() {
                     initial={{ opacity: 0, x: -14 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: i * 0.05 }}
-                    onClick={() => setMenuOpen(false)}
+                    onClick={(event) => {
+                      handleNavClick(event, href);
+                      setMenuOpen(false);
+                    }}
                   >
                     <span className="drawer-idx">0{i + 1}</span> {label}
                   </motion.a>
                 ))}
               </div>
-              <motion.button
-                className="btn-primary btn-sm"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                onClick={handleLogout}
-              >
-                Logout
-              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -705,7 +715,7 @@ export default function Mains() {
                   <ul className="info-list" data-gsap="stagger-parent">
                     {[
                       ["Full Name", about.fullName, RiUser3Line],
-                      ["Age", about.age, null],
+                      ["Age", about.age, RiCalendarLine],
                       ["Contact", about.contact, RiPhoneLine],
                       ["Email", about.email, RiMailLine],
                       ["Address", about.address, RiMapPinLine],
@@ -715,11 +725,9 @@ export default function Mains() {
                         className="info-item"
                         data-gsap="stagger-child"
                       >
-                        {Icon && (
-                          <span className="info-icon">
-                            <Icon size={13} />
-                          </span>
-                        )}
+                        <span className="info-icon" aria-hidden="true">
+                          {Icon ? <Icon size={13} /> : null}
+                        </span>
                         <span className="info-key">{key}</span>
                         <span className="info-sep">—</span>
                         <span className="info-val">{val || "—"}</span>
